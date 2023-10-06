@@ -1,0 +1,61 @@
+mpicc.mpich pi_mpi_omp.c -Wall -Wimplicit-function-declaration -O3 -std=c99 -march=native  -fopenmp  -o pi_mpi_omp 
+Launching 2 MPI processes. Number of threads per process: 1
+Number pi after 1073741824 iterations = 3.141563892364502
+4.932693
+Launching 2 MPI processes. Number of threads per process: 2
+Number pi after 1073741824 iterations = 3.141599416732788
+2.468073
+Launching 2 MPI processes. Number of threads per process: 3
+Number pi after 1073741824 iterations = 3.141627311706543
+1.645854
+Launching 2 MPI processes. Number of threads per process: 4
+Number pi after 1073741824 iterations = 3.141614198684692
+1.264269
+Launching 2 MPI processes. Number of threads per process: 5
+Number pi after 1073741824 iterations = 3.141572952270508
+1.051406
+Launching 2 MPI processes. Number of threads per process: 6
+Number pi after 1073741824 iterations = 3.141525745391846
+0.877737
+Launching 2 MPI processes. Number of threads per process: 7
+Number pi after 1073741824 iterations = 3.141555547714233
+0.762953
+Launching 2 MPI processes. Number of threads per process: 8
+Number pi after 1073741824 iterations = 3.141545057296753
+0.661709
+Launching 2 MPI processes. Number of threads per process: 9
+Number pi after 1073741824 iterations = 3.141544580459595
+0.604422
+Launching 2 MPI processes. Number of threads per process: 10
+Number pi after 1073741824 iterations = 3.141516447067261
+0.545003
+Launching 2 MPI processes. Number of threads per process: 11
+Number pi after 1073741824 iterations = 3.141497135162354
+0.570925
+Launching 2 MPI processes. Number of threads per process: 12
+Number pi after 1073741824 iterations = 3.141484737396240
+0.524441
+Launching 2 MPI processes. Number of threads per process: 13
+Number pi after 1073741824 iterations = 3.141492128372192
+0.484079
+Launching 2 MPI processes. Number of threads per process: 14
+Number pi after 1073741824 iterations = 3.141526460647583
+0.451706
+Launching 2 MPI processes. Number of threads per process: 15
+Number pi after 1073741824 iterations = 3.141513824462891
+0.422642
+Launching 2 MPI processes. Number of threads per process: 16
+Number pi after 1073741824 iterations = 3.141489505767822
+0.396714
+Launching 2 MPI processes. Number of threads per process: 17
+Number pi after 1073741824 iterations = 3.141508579254150
+0.373148
+Launching 2 MPI processes. Number of threads per process: 18
+Number pi after 1073741824 iterations = 3.141491413116455
+0.353170
+Launching 2 MPI processes. Number of threads per process: 19
+Number pi after 1073741824 iterations = 3.141519784927368
+0.335389
+Launching 2 MPI processes. Number of threads per process: 20
+Number pi after 1073741824 iterations = 3.141507148742676
+0.319134
