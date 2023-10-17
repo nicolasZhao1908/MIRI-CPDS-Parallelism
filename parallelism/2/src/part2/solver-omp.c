@@ -98,7 +98,7 @@ double relax_gauss_ordered (double *u, unsigned sizex, unsigned sizey)
     nby = omp_get_max_threads(); 
     by = sizey/nby;
 
-    #pragma omp parallel for ordered(2) reduction(+:sum) private(diff, unew)
+    #pragma omp parallel for collapse(2) ordered(2) reduction(+:sum) private(diff, unew)
     for (int ii=0; ii<nbx; ii++){
         for (int jj=0; jj<nby; jj++){
             #pragma omp ordered depend(sink: ii-1, jj) depend(sink: ii,jj-1) 
