@@ -7,5 +7,5 @@ Algorithm         : 2 (Gauss-Seidel)
 Num. Heat sources : 2
    1: (0.00, 0.00) 1.00 2.50 
    2: (0.50, 1.00) 1.00 2.50 
-Time: 2.327 (9.049 GFlop => 3888.98 MFlop/s)
+Time: 2.336 (9.049 GFlop => 3873.25 MFlop/s)
 Convergence to residual=0.000050: 12552 iterations
