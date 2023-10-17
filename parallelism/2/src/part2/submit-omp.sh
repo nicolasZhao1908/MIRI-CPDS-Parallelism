@@ -2,8 +2,8 @@
 
 #SBATCH --job-name=submit-omp.sh
 #SBATCH -D .
-#SBATCH --output=submit-omp.sh.o%j
-#SBATCH --error=submit-omp.sh.e%j
+#SBATCH --output=%j.out
+#SBATCH --error=%j.err
 
 input=test.dat
 

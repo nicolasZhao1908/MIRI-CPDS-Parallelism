@@ -101,8 +101,11 @@ int main( int argc, char *argv[] )
 	    case 1: // RED-BLACK
 		    residual = relax_redblack(param.u, np, np);
 		    break;
-	    case 2: // GAUSS
-		    residual = relax_gauss(param.u, np, np);
+	    case 2: // GAUSS with ordered
+		    residual = relax_gauss_ordered(param.u, np, np);
+		    break;
+	    case 3: // GAUSS with tasks
+		    residual = relax_gauss_task(param.u, np, np);
 		    break;
 	    }
 
