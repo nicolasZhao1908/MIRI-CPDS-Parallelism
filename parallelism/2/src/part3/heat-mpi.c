@@ -20,6 +20,8 @@ int main( int argc, char *argv[] )
     char *resfilename;
     int myid, numprocs;
     MPI_Status status;
+    double totalResidual;
+    
 
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
@@ -34,6 +36,7 @@ int main( int argc, char *argv[] )
 
     double runtime, flop;
     double residual=0.0;
+    
 
     // check arguments
     if( argc < 2 )
@@ -90,17 +93,25 @@ int main( int argc, char *argv[] )
     // full size (param.resolution are only the inner points)
     np = param.resolution + 2;
     
+    //Work distribution
+    int rows_remain = param.resolution % numprocs; 
+    int loadPerProc = (param.resolution - rows_remain) / numprocs; 
+    int loadPerProcGhost = loadPerProc + 2; 
     // starting time
     runtime = wtime();
 
+    //All workers need to recive maxIter, resolution and algorithm, we can do a BCAST
+    MPI_Bcast(&param.maxiter,1,MPI_INT,0,MPI_COMM_WORLD);
+    MPI_Bcast(&param.resolution,1,MPI_INT,0,MPI_COMM_WORLD);
+    MPI_Bcast(&param.algorithm,1,MPI_INT,0,MPI_COMM_WORLD); 
     // send to workers the necessary data to perform computation
     for (int i=0; i<numprocs; i++) {
         if (i>0) {
-                MPI_Send(&param.maxiter, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
-                MPI_Send(&param.resolution, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
-                MPI_Send(&param.algorithm, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
-                MPI_Send(&param.u[0], (np)*(np), MPI_DOUBLE, i, 0, MPI_COMM_WORLD);
-                MPI_Send(&param.uhelp[0], (np)*(np), MPI_DOUBLE, i, 0, MPI_COMM_WORLD);
+                //MPI_Send(&param.maxiter, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
+                //MPI_Send(&param.resolution, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
+                //MPI_Send(&param.algorithm, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
+                MPI_Send(&param.u[np*i*loadPerProc], (np)*(loadPerProc), MPI_DOUBLE, i, 0, MPI_COMM_WORLD);
+                MPI_Send(&param.uhelp[np*i*loadPerProc], (np)*(loadPerProc), MPI_DOUBLE, i, 0, MPI_COMM_WORLD);
         }
     }
 
@@ -108,7 +119,12 @@ int main( int argc, char *argv[] )
     while(1) {
 	switch( param.algorithm ) {
 	    case 0: // JACOBI
-	            residual = relax_jacobi(param.u, param.uhelp, np, np);
+        //Send first and recive last row
+        if (myid < numprocs-1){
+			    MPI_Send(&param.u[loadPerProc*np], np, MPI_DOUBLE, 1, 0, MPI_COMM_WORLD);
+			    MPI_Recv(&param.u[(loadPerProc+1)*np], np, MPI_DOUBLE, 1, 0, MPI_COMM_WORLD, &status);
+		    }
+            residual = relax_jacobi(param.u, param.uhelp, loadPerProcGhost+rows_remain, np);
 		    // Copy uhelp into u
 		    for (int i=0; i<np; i++)
     		        for (int j=0; j<np; j++)
@@ -123,14 +139,19 @@ int main( int argc, char *argv[] )
 	    }
 
         iter++;
-
+        //Recive residual from all workers and check 
+        MPI_Allreduce(&residual, &totalResidual,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD); 
         // solution good enough ?
-        if (residual < 0.00005) break;
+        if (totalResidual < 0.00005) break;
 
         // max. iteration reached ? (no limit with maxiter=0)
         if (param.maxiter>0 && iter>=param.maxiter) break;
     }
 
+    // Process data from workers
+    for (int i = 1; i < numprocs; i++){ 
+	    MPI_Recv(&param.u[(loadPerProc*i+1)*np], loadPerProc*np, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &status);
+    }
     // Flop count after iter iterations
     flop = iter * 11.0 * param.resolution * param.resolution;
     // stopping time
@@ -169,12 +190,17 @@ int main( int argc, char *argv[] )
     int algorithm;
     double residual;
 
-    MPI_Recv(&maxiter, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
-    MPI_Recv(&columns, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
-    MPI_Recv(&algorithm, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
+    MPI_Bcast(&maxiter, 1, MPI_INT,0, MPI_COMM_WORLD);
+    MPI_Bcast(&columns, 1, MPI_INT,0, MPI_COMM_WORLD);
+    MPI_Bcast(&algorithm, 1, MPI_INT,0, MPI_COMM_WORLD);
+    //MPI_Recv(&maxiter, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
+    //MPI_Recv(&columns, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
+    //MPI_Recv(&algorithm, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
 
     rows = columns;
     np = columns + 2;
+    int loadPerProc = rows/numprocs;
+    int loadPerProcGhost = loadPerProc+2;
 
     // allocate memory for worker
     double * u = calloc( sizeof(double),(rows+2)*(columns+2) );
@@ -193,7 +219,14 @@ int main( int argc, char *argv[] )
     while(1) {
 	switch( algorithm ) {
 	    case 0: // JACOBI
-	            residual = relax_jacobi(u, uhelp, np, np);
+            MPI_Recv(&u[0], np, MPI_DOUBLE, myid-1, 0, MPI_COMM_WORLD, &status);
+            if(myid<numprocs-1)
+            {
+                MPI_Send(&u[loadPerProc*np], np, MPI_DOUBLE, myid+1, 0, MPI_COMM_WORLD);
+			    MPI_Recv(&u[(loadPerProc+1)*np], np, MPI_DOUBLE, myid+1, 0, MPI_COMM_WORLD, &status);
+            }
+            MPI_Send(&u[np], np, MPI_DOUBLE, myid-1, 0, MPI_COMM_WORLD);
+	        residual = relax_jacobi(u, uhelp, loadPerProcGhost, np);
 		    // Copy uhelp into u
 		    for (int i=0; i<np; i++)
     		        for (int j=0; j<np; j++)
@@ -209,12 +242,15 @@ int main( int argc, char *argv[] )
 
         iter++;
 
+        MPI_Allreduce(&residual, &totalResidual, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         // solution good enough ?
-        if (residual < 0.00005) break;
+        if (totalResidual < 0.00005) break;
 
         // max. iteration reached ? (no limit with maxiter=0)
         if (maxiter>0 && iter>=maxiter) break;
     }
+
+    MPI_Send(&u[np], (loadPerProc)*(np), MPI_DOUBLE, 0, 0, MPI_COMM_WORLD); 
 
     if( u ) free(u); 
     if( uhelp ) free(uhelp);
