@@ -1,4 +1,0 @@
-solver-omp.c: In function ‘relax_gauss_task’:
-solver-omp.c:136:9: warning: unused variable ‘blocks’ [-Wunused-variable]
-  136 |     int blocks[nbx][nby];
-      |         ^~~~~~

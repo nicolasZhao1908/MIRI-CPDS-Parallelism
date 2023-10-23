@@ -11,28 +11,26 @@
 double relax_jacobi (double *u, double *utmp, unsigned sizex, unsigned sizey)
 {
     double diff, sum=0.0;
-    int nbx, bx, nby, by;
+    // int nbx, bx, nby, by;
 
     // number of blocks
-    nbx = omp_get_max_threads();
-    nby = 1;
+    // nbx = omp_get_max_threads();
+    // nby = 1;
 
     // number of elements inside the block
-    bx = sizex/nbx;
-    by = sizey/nby;
+    // bx = sizex/nbx;
+    // by = sizey/nby;
 
-    #pragma omp parallel for reduction(+: sum) private(diff)
-    for (int ii=0; ii<nbx; ii++)
-        for (int jj=0; jj<nby; jj++) 
-            for (int i=1+ii*bx; i<=min((ii+1)*bx, sizex-2); i++) 
-                for (int j=1+jj*by; j<=min((jj+1)*by, sizey-2); j++) {
-                    utmp[i*sizey+j]= 0.25 * (u[ i*sizey + (j-1)] +  // left
-                            u[i*sizey + (j+1)] +  // right
-                            u[(i-1)*sizey + j] +  // top
-                            u[(i+1)*sizey + j]);  // bottom
-                    diff = utmp[i*sizey+j] - u[i*sizey + j];
-                    sum += diff * diff; 
-                }
+    #pragma omp parallel for collapse(2) private(diff) reduction(+: sum) 
+    for (unsigned int i = 1; i < sizex-1; i++) 
+        for (unsigned int j = 1; j < sizey-1; j++) {
+            utmp[i*sizey+j]= 0.25 * (u[ i*sizey + (j-1)] +  // left
+                    u[i*sizey + (j+1)] +  // right
+                    u[(i-1)*sizey + j] +  // top
+                    u[(i+1)*sizey + j]);  // bottom
+            diff = utmp[i*sizey+j] - u[i*sizey + j];
+            sum += diff * diff; 
+        }
 
     return sum;
 }
@@ -135,7 +133,7 @@ double relax_gauss_task (double *u, unsigned sizex, unsigned sizey)
 
     int blocks[nbx][nby];
 
-    #pragma omp parallel 
+    #pragma omp parallel  
     #pragma omp single
     {
         for (int ii=0; ii<nbx; ii++){
@@ -154,7 +152,7 @@ double relax_gauss_task (double *u, unsigned sizex, unsigned sizey)
                             u[i*sizey+j]=unew;
                         }
                     }
-                    #pragma omp atomic
+                    #pragma omp critical
                     sum += partial_sum;
                 }
             }

@@ -11,8 +11,8 @@
 ### Directives for SLURM
 #SBATCH --job-name=heat-CUDA
 #SBATCH -D .
-#SBATCH --output=submit-heat-CUDA.sh.o%j
-#SBATCH --error=submit-heat-CUDA.sh.e%j
+#SBATCH --output=%j.out
+#SBATCH --error=%j.err
 #SBATCH -A cuda
 #SBATCH -p cuda
 #SBATCH --gres=gpu:4
@@ -20,6 +20,8 @@
 export PATH=/Soft/cuda/11.2.1/bin:$PATH
 
 KERNEL=heat-CUDA
+
+make $KERNEL
 
 # Define threads per block
 txb=8

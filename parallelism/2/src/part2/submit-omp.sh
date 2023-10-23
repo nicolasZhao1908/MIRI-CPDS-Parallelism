@@ -2,8 +2,9 @@
 
 #SBATCH --job-name=submit-omp.sh
 #SBATCH -D .
-#SBATCH --output=%j.out
-#SBATCH --error=%j.err
+#SBATCH --output=%j_gauss_task_512.out
+#SBATCH --error=%j_gauss_task_512.err
+
 
 input=test.dat
 
@@ -37,7 +38,6 @@ fi
 
 echo OMP_NUM_THREADS=$OMP_NUM_THREADS
 
-make clean
 make $PROG
 
 /usr/bin/time -o time-${PROG}-${OMP_NUM_THREADS}-${HOST}.txt ./$PROG $input

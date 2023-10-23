@@ -13,6 +13,9 @@ misc.o: misc.c
 heat: heat.c solver.c misc.o
 	$(CC) $(OPT3) $(CFLAGS) $+ $(LFLAGS) -o $@
 
+heat_debug: heat.c solver.c misc.o
+	$(CC) $(OPTG0) $(CFLAGS) $+ $(LFLAGS) -o $@
+
 clean:
 	rm -fr $(ALL) *.o *.ppm sub*.e* sub*.o* *.xdot *.prv *.pcf *.row 
 
