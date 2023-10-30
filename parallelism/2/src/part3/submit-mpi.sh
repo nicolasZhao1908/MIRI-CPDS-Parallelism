@@ -1,9 +1,9 @@
 #!/bin/bash
 
-#SBATCH --job-name=submit-mpi.sh
+#SBATCH --job-name=MPIIII
 #SBATCH -D .
-#SBATCH --output=submit-mpi.sh.o%j
-#SBATCH --error=submit-mpi.sh.e%j
+#SBATCH --output=%j.out
+#SBATCH --error=%j.err
 ## #SBATCH --nodes=1
 #SBATCH --ntasks=16
 #SBATCH --cpus-per-task=1
@@ -40,7 +40,6 @@ then
 fi
 
 
-#make clean
 make $PROGRAM
 
 mpirun.mpich -np $procs ./$PROGRAM $input

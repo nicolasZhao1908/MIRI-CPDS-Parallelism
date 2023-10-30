@@ -50,8 +50,7 @@ double wtime();
 double relax_redblack( double *u, 
 		  unsigned sizex, unsigned sizey );
 
-double relax_gauss( double *u, 
-		  unsigned sizex, unsigned sizey );
+double relax_gauss( double *u, unsigned sizex, unsigned sizey);
 
 double relax_jacobi( double *u, double *utmp,
 		   unsigned sizex, unsigned sizey ); 
