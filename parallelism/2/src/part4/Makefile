@@ -14,5 +14,5 @@ heat-CUDA: heat-CUDA.cu kernels.o
 	$(NVCC) $(NVCCFLAGS) $+ $(LFLAGS) -o $@
 
 clean:
-	rm -fr $(ALL) *.out *.err *~ *.ppm *.ps *.txt sub*.e* sub*.o* *.prv *.pcf *.row TRACE.mpits set-0 *.sym
+	rm -fr $(ALL) *.out *.err *~ *.ppm *.ps *.txt sub*.e* sub*.o* *.prv *.pcf *.row TRACE.mpits set-0 *.sym *.o
 

@@ -4,6 +4,8 @@
 #include <float.h>
 #include <cuda.h>
 
+#define REDUCTION 0
+
 typedef struct {
     float posx;
     float posy;
@@ -37,6 +39,8 @@ int coarsen(double *uold, unsigned oldx, unsigned oldy ,
 
 
 __global__ void gpu_Heat (double *h, double *g, int N);
+__global__ void gpu_Diff (double *h, double *g, double *diff, int N);
+__global__ void gpu_Heat_reduction (double *h, double *g, int N);
 
 #define NB 8
 #define min(a,b) ( ((a) < (b)) ? (a) : (b) )
@@ -166,9 +170,8 @@ int main( int argc, char *argv[] ) {
     double residual;
     while(1) {
         residual = cpu_jacobi(param.u, param.uhelp, np, np);
-        double * tmp = param.u;
-        param.u = param.uhelp;
-        param.uhelp = tmp;
+
+        cudaMemcpy(param.u, param.uhelp, np*np*sizeof(double), cudaMemcpyHostToHost);
 
         iter++;
 
@@ -213,34 +216,56 @@ int main( int argc, char *argv[] ) {
 
     double *dev_u;
     double *dev_uhelp;
-    double *dev_sum;
+    double *dev_diffs;
+    double *dev_red1;
+    double *dev_red2;
+
+    const int MAX_THREADS_PER_BLK = 1024;
+    int blocks = Grid_Dim * Grid_Dim; 
+    int threads = Block_Dim * Block_Dim; 
+    if (REDUCTION && blocks > MAX_THREADS_PER_BLK){
+        threads = MAX_THREADS_PER_BLK;
+        blocks = ((np-2) * (np-2) / threads) + ((np-2) * (np-2) % threads != 0);
+    }
 
     // TODO: Allocation on GPU for matrices u and uhelp
     cudaMalloc(&dev_u, np*np*sizeof(double));
     cudaMalloc(&dev_uhelp, np*np*sizeof(double));
-    cudaMalloc(&dev_sum, sizeof(double));
+    if (REDUCTION){
+        cudaMalloc(&dev_diffs, (np-2)*(np-2)*sizeof(double));
+        cudaMalloc(&dev_red1, threads*sizeof(double));
+        cudaMalloc(&dev_red2, blocks*sizeof(double));
+    }
 
     // TODO: Copy initial values in u and uhelp from host to GPU
     cudaMemcpy(dev_u, param.u, np*np*sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(dev_uhelp, param.uhelp, np*np*sizeof(double), cudaMemcpyHostToDevice);
 
+    double *res;
+    if (REDUCTION)
+        res = (double*)malloc(sizeof(double)*blocks);
     iter = 0;
     while(1) {
-        gpu_Heat<<<Grid,Block>>>(dev_u, dev_uhelp, np);
-        cudaDeviceSynchronize();  // Wait for compute device to finish.
+        if (REDUCTION){
+            gpu_Diff<<<Grid, Block>>>(dev_u, dev_uhelp, dev_diffs, np);
+            gpu_Heat_reduction<<<blocks, threads, threads*sizeof(double)>>>(dev_diffs, dev_red1, (np-2) * (np-2));
+            gpu_Heat_reduction<<<1, blocks, blocks*sizeof(double)>>>(dev_red1, dev_red2, blocks);
+            cudaDeviceSynchronize();  // Wait for compute device to finish.
+            cudaMemcpy(param.u, dev_u, np*np*sizeof(double), cudaMemcpyDeviceToHost);
+            cudaMemcpy(param.uhelp, dev_uhelp, np*np*sizeof(double), cudaMemcpyDeviceToHost);
+            cudaMemcpy(res, dev_red2, sizeof(double)*blocks, cudaMemcpyDeviceToHost);
+            residual = res[0];
+        }else{
+            gpu_Heat<<<Grid, Block>>>(dev_u, dev_uhelp, np);
+            cudaDeviceSynchronize();  // Wait for compute device to finish.
+            cudaMemcpy(param.u, dev_u, np*np*sizeof(double), cudaMemcpyDeviceToHost);
+            cudaMemcpy(param.uhelp, dev_uhelp, np*np*sizeof(double), cudaMemcpyDeviceToHost);
+            residual = cpu_residual (param.u, param.uhelp, np, np);
+        }
 
-        // TODO: residual is computed on host, we need to get from GPU values computed in u and uhelp
-        cudaMemcpy(param.u, dev_u, np*np*sizeof(double), cudaMemcpyDeviceToHost);
-        cudaMemcpy(param.uhelp, dev_uhelp, np*np*sizeof(double), cudaMemcpyDeviceToHost);
-
-        residual = cpu_residual (param.u, param.uhelp, np, np);
-
-        double * tmp = dev_u;
-        dev_u = dev_uhelp;
-        dev_uhelp = tmp;
+        cudaMemcpy(dev_u, dev_uhelp, np*np*sizeof(double), cudaMemcpyHostToHost);
 
         iter++;
-
         // solution good enough ?
         if (residual < 0.00005) break;
 

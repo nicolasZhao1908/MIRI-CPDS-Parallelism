@@ -16,5 +16,5 @@ clean:
 	rm -fr $(ALL)
 
 purge:
-	rm -fr $(ALL) *.out *.err *.ppm sub*.o* sub*.e* *.prv *.pcf *.row time-heat-omp*boada*.txt
+	rm -fr $(ALL) *.out *.err *.ppm sub*.o* sub*.e* *.prv *.pcf *.row time-heat-omp*boada*.txt *.o
 
