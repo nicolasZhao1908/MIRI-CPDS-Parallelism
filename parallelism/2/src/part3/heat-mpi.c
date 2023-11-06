@@ -93,9 +93,11 @@ int main( int argc, char *argv[] )
         // starting time
         runtime = wtime();
 
-        MPI_Bcast(&param.maxiter, 1, MPI_INT, 0, MPI_COMM_WORLD);
-        MPI_Bcast(&param.resolution, 1, MPI_INT, 0, MPI_COMM_WORLD);
-        MPI_Bcast(&param.algorithm, 1, MPI_INT, 0, MPI_COMM_WORLD);
+        if (numprocs > 0){
+            MPI_Bcast(&param.maxiter, 1, MPI_INT, 0, MPI_COMM_WORLD);
+            MPI_Bcast(&param.resolution, 1, MPI_INT, 0, MPI_COMM_WORLD);
+            MPI_Bcast(&param.algorithm, 1, MPI_INT, 0, MPI_COMM_WORLD);
+        }
 
         int send_sz = (rows + 2) * np;
         // send to workers the necessary data to perform computation
@@ -110,8 +112,10 @@ int main( int argc, char *argv[] )
         while(1) {
             switch( param.algorithm ) {
                 case 0: // JACOBI
-                    MPI_Recv(param.u+(rows+1)*np, np, MPI_DOUBLE, myid+1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                    MPI_Send(param.u+rows*np, np, MPI_DOUBLE, myid+1, 0, MPI_COMM_WORLD );
+                    if (numprocs > 1){
+                        MPI_Recv(param.u+(rows+1)*np, np, MPI_DOUBLE, myid+1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                        MPI_Send(param.u+rows*np, np, MPI_DOUBLE, myid+1, 0, MPI_COMM_WORLD);
+                    }
 
                     residual = relax_jacobi(param.u, param.uhelp, rows + 2, np);
 
@@ -201,11 +205,11 @@ int main( int argc, char *argv[] )
         while(1) {
             switch( algorithm ) {
                 case 0: // JACOBI
-                    MPI_Send(u+np, np, MPI_DOUBLE, myid-1, 0, MPI_COMM_WORLD );
+                    MPI_Send(u+np, np, MPI_DOUBLE, myid-1, 0, MPI_COMM_WORLD);
                     MPI_Recv(u, np, MPI_DOUBLE, myid-1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
                     if (myid < numprocs - 1){
-                        MPI_Send(u+rows*np, np, MPI_DOUBLE, myid+1, 0, MPI_COMM_WORLD );
+                        MPI_Send(u+rows*np, np, MPI_DOUBLE, myid+1, 0, MPI_COMM_WORLD);
                         MPI_Recv(u+(rows+1)*np, np, MPI_DOUBLE, myid+1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                     }
 

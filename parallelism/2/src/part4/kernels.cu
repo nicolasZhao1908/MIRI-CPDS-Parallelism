@@ -23,7 +23,8 @@ __global__ void gpu_Diff(double *u, double *utmp, double* diffs, int N) {
                 u[ i*N     + (j+1) ]+  // right
                 u[ (i-1)*N + j     ]+  // top
                 u[ (i+1)*N + j     ]); // bottom
-        diffs[(i-1)*(N-2)+j-1] = (utmp[i*N+j] - u[i*N+j])*(utmp[i*N+j] - u[i*N+j]);
+        diffs[(i-1)*(N-2)+j-1] = utmp[i*N+j] - u[i*N+j];
+        diffs[(i-1)*(N-2)+j-1] *= diffs[(i-1)*(N-2)+j-1];
     }
 }
 

@@ -26,6 +26,7 @@ double relax_gauss (double *u, unsigned sizex, unsigned sizey)
     int nby, by, numprocs;
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Request r;
 
     by = sizex - 2;
     nby = (sizey-2) / by;
@@ -34,7 +35,7 @@ double relax_gauss (double *u, unsigned sizex, unsigned sizey)
     for (int jj = 0; jj < nby ; jj++) {
         if (rank > 0){
             int offset = jj * by + 1;
-            MPI_Recv( u + offset, by, MPI_DOUBLE, rank - 1, 0, 
+            MPI_Recv(u + offset, by, MPI_DOUBLE, rank - 1, 0, 
                     MPI_COMM_WORLD, MPI_STATUS_IGNORE );
         }
 
@@ -54,8 +55,8 @@ double relax_gauss (double *u, unsigned sizex, unsigned sizey)
 
         if (rank < numprocs - 1 ){
             int offset = (sizex - 2) * sizey +  jj * by + 1;
-            MPI_Send( u + offset, by, MPI_DOUBLE, rank + 1, 0, 
-                    MPI_COMM_WORLD);
+            MPI_Isend( u + offset, by, MPI_DOUBLE, rank + 1, 0, 
+                    MPI_COMM_WORLD, &r);
         }
     }
 

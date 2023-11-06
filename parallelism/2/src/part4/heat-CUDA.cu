@@ -4,7 +4,7 @@
 #include <float.h>
 #include <cuda.h>
 
-#define REDUCTION 0
+#define REDUCTION 1
 
 typedef struct {
     float posx;
@@ -242,6 +242,7 @@ int main( int argc, char *argv[] ) {
     cudaMemcpy(dev_uhelp, param.uhelp, np*np*sizeof(double), cudaMemcpyHostToDevice);
 
     double *res;
+
     if (REDUCTION)
         res = (double*)malloc(sizeof(double)*blocks);
     iter = 0;
@@ -251,8 +252,6 @@ int main( int argc, char *argv[] ) {
             gpu_Heat_reduction<<<blocks, threads, threads*sizeof(double)>>>(dev_diffs, dev_red1, (np-2) * (np-2));
             gpu_Heat_reduction<<<1, blocks, blocks*sizeof(double)>>>(dev_red1, dev_red2, blocks);
             cudaDeviceSynchronize();  // Wait for compute device to finish.
-            cudaMemcpy(param.u, dev_u, np*np*sizeof(double), cudaMemcpyDeviceToHost);
-            cudaMemcpy(param.uhelp, dev_uhelp, np*np*sizeof(double), cudaMemcpyDeviceToHost);
             cudaMemcpy(res, dev_red2, sizeof(double)*blocks, cudaMemcpyDeviceToHost);
             residual = res[0];
         }else{
@@ -279,6 +278,9 @@ int main( int argc, char *argv[] ) {
     // TODO: free memory used in GPU
     cudaFree(dev_u);
     cudaFree(dev_uhelp);
+    cudaFree(dev_red1);
+    cudaFree(dev_red2);
+    cudaFree(dev_diffs);
 
 
     cudaEventRecord( stop, 0 );     // instrument code to measue end time
